@@ -1,5 +1,4 @@
 # MY_BIGGEST_PROJECT_YET
-Description in readme
 
 Project Proposal: Smart Employee Attendance and Payment System
 Project Overview

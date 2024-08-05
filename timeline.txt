@@ -1,14 +1,14 @@
 Detailed Development Timeline
 Phase 1: Initial Setup and Database Design (Weeks 1-2)
 Week 1:
-Day 1-2: Project kickoff, define project scope, and gather requirements.
-Day 3-5: Set up the development environment, including version control (Git) and project management tools.
-Day 6-7: Design the SQLite database schema, defining tables for employees, attendance, and payments.
+Day 1-2: Project kickoff, define project scope, and gather requirements. # DONE
+Day 3-5: Set up the development environment, including version control (Git) and project management tools. # DONE
+Day 6-7: Design the SQLite database schema, defining tables for employees, attendance, and payments. # DONE
 
 Week 2:
-Day 8-9: Implement the SQLite database schema.
-Day 10-12: Create sample data for testing.
-Day 13-14: Test the database setup and make necessary adjustments.
+Day 8-9: Implement the SQLite database schema. # DONE
+Day 10-12: Create sample data for testing. # DONE
+Day 13-14: Test the database setup and make necessary adjustments. # DONE
 
 Phase 2: Facial Recognition System (Weeks 3-5)
 Week 3:

@@ -20,7 +20,7 @@ Day 22-24: Train the facial recognition model using the prepared dataset. # DONE
 Day 25-28: Develop the face recognition algorithm to identify employees. # DONE
 
 Week 5:
-Day 29: Implement a attendance list template (list all attendances for each employee along with date&time for each attendance)
+Day 29: Implement a attendance list template (list all attendances for each employee along with date&time for each attendance) + somehow check if person is going in or out (prvo da se samo odabere, pole će bit 2 kamere)
 Day 29-31: Integrate the face recognition system with the smart lock (Arduino or similar).
 Day 32-35: Implement and test the logic to open/close doors based on recognition results.
 Day 36-37: Print simulation statements ("Person recognized, door opened" / "Person unknown, door closed").

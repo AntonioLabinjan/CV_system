@@ -1,5 +1,8 @@
 # MY_BIGGEST_PROJECT_YET
 
+
+# EAPS FOLDER JE NAJBITNIJI
+
 Project Proposal: Smart Employee Attendance and Payment System
 Project Overview
 The proposed project aims to develop a smart employee attendance and payment system using facial recognition technology. The system will streamline the process of tracking employee attendance, calculating work hours, and computing payments, including adjustments for overtime, vacations, and sick days. This system will enhance security, accuracy, and efficiency in managing employee attendance and payroll.

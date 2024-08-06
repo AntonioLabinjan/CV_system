@@ -18,6 +18,9 @@ known_face_names = []
 # Track attendance for the current session
 logged_names = set()
 
+# Flag to track if a message has been printed
+message_printed = False
+
 # Function to add a known face
 def add_known_face(image_path, name):
     image = cv2.imread(image_path)
@@ -50,6 +53,7 @@ def load_known_faces():
 
 # Load known faces at startup
 load_known_faces()
+
 def create_tables():
     conn = sqlite3.connect('employee_attendance.db')
     cursor = conn.cursor()
@@ -118,6 +122,7 @@ def video_feed():
 
 def generate_frames():
     cap = cv2.VideoCapture(0)
+    global message_printed
     while True:
         success, frame = cap.read()
         if not success:
@@ -149,9 +154,17 @@ def generate_frames():
             cv2.putText(frame, label, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
 
             # Log attendance if recognized and not already logged
-            if name and name not in logged_names:
-                logged_names.add(name)
-                log_attendance(name)
+            if name:
+                if name not in logged_names:
+                    logged_names.add(name)
+                    log_attendance(name)
+                if not message_printed:
+                    print(f"{name} recognized, door unlocked")
+                    message_printed = True
+            else:
+                if not message_printed:
+                    print("Person unknown, door remain locked")
+                    message_printed = True
 
         # Encode the frame as JPEG
         ret, buffer = cv2.imencode('.jpg', frame)
@@ -162,7 +175,6 @@ def generate_frames():
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
     cap.release()
-
 
 # Function to log attendance to the database
 def log_attendance(name):
@@ -179,11 +191,10 @@ def log_attendance(name):
                        (name, datetime.now(), today))
         conn.commit()
         print(f"Logged entry for {name} at {datetime.now()}")
+    else:
+        print(f"Entry for {name} already exists for today.")
 
     conn.close()
-
-# Function to initialize the database
-
 
 # Route for home page
 @app.route('/')
@@ -221,6 +232,16 @@ def add_employee():
         return render_template('add_employee_success.html', name=name)
 
     return render_template('add_employee.html')
+
+@app.route('/employees', methods=['GET'])
+def list_employees():
+    conn = sqlite3.connect('employee_attendance.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT employee_id, name, hourly_rate FROM employees')
+    employees = cursor.fetchall()
+    conn.close()
+    return render_template('list_employees.html', employees=employees)
+
 
 
 if __name__ == '__main__':

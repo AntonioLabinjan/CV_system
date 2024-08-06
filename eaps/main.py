@@ -7,6 +7,9 @@ import torch
 import sqlite3
 from datetime import datetime
 
+
+DATASET_PATH = "C:/Users/Korisnik/Desktop/eaps/dataset"
+
 # Initialize CLIP model and processor
 model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
@@ -17,8 +20,6 @@ known_face_names = []
 
 # Track attendance for the current session
 logged_names = set()
-
-# Flag to track if a message has been printed
 message_printed = False
 
 # Function to add a known face
@@ -37,8 +38,8 @@ def add_known_face(image_path, name):
 
 # Load all known faces from the 'dataset' directory
 def load_known_faces():
-    for employee_name in os.listdir('dataset'):
-        employee_dir = os.path.join('dataset', employee_name)
+    for employee_name in os.listdir(DATASET_PATH):
+        employee_dir = os.path.join(DATASET_PATH, employee_name)
         if os.path.isdir(employee_dir):
             for filename in os.listdir(employee_dir):
                 image_path = os.path.join(employee_dir, filename)
@@ -116,13 +117,19 @@ def recognize_face(frame):
     return None
 
 # Route to stream video
-@app.route('/video_feed')
+@app.route('/video_feed', methods=['GET', 'POST'])
 def video_feed():
+    if request.method == 'POST':
+        action = request.args.get('action')
+        global button_clicked
+        button_clicked = action
+        return '', 204
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 def generate_frames():
+    global button_clicked, message_printed
+    button_clicked = None
     cap = cv2.VideoCapture(0)
-    global message_printed
     while True:
         success, frame = cap.read()
         if not success:
@@ -153,11 +160,13 @@ def generate_frames():
             cv2.rectangle(frame, (x, y), (x+w, y+h), color, 2)
             cv2.putText(frame, label, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
 
-            # Log attendance if recognized and not already logged
-            if name:
-                if name not in logged_names:
+            # Log attendance if recognized and button clicked
+            if name and button_clicked:
+                if button_clicked == 'entry' and name not in logged_names:
                     logged_names.add(name)
-                    log_attendance(name)
+                    log_attendance(name, 'entry')
+                elif button_clicked == 'exit' and name in logged_names:
+                    log_attendance(name, 'exit')
                 if not message_printed:
                     print(f"{name} recognized, door unlocked")
                     message_printed = True
@@ -177,22 +186,35 @@ def generate_frames():
     cap.release()
 
 # Function to log attendance to the database
-def log_attendance(name):
+def log_attendance(name, action):
     conn = sqlite3.connect('employee_attendance.db')
     cursor = conn.cursor()
 
-    # Check if entry already exists for today
     today = datetime.now().date()
-    cursor.execute('SELECT * FROM attendance WHERE employee_id = (SELECT employee_id FROM employees WHERE name = ?) AND date = ?', (name, today))
-    entry = cursor.fetchone()
+    if action == 'entry':
+        # Check if entry already exists for today
+        cursor.execute('SELECT * FROM attendance WHERE employee_id = (SELECT employee_id FROM employees WHERE name = ?) AND date = ?', (name, today))
+        entry = cursor.fetchone()
 
-    if entry is None:
-        cursor.execute('INSERT INTO attendance (employee_id, entry_time, date) VALUES ((SELECT employee_id FROM employees WHERE name = ?), ?, ?)',
-                       (name, datetime.now(), today))
-        conn.commit()
-        print(f"Logged entry for {name} at {datetime.now()}")
-    else:
-        print(f"Entry for {name} already exists for today.")
+        if entry is None:
+            cursor.execute('INSERT INTO attendance (employee_id, entry_time, date) VALUES ((SELECT employee_id FROM employees WHERE name = ?), ?, ?)',
+                           (name, datetime.now(), today))
+            conn.commit()
+            print(f"Logged entry for {name} at {datetime.now()}, door unlocked")
+        else:
+            print(f"Entry for {name} already exists for today.")
+    elif action == 'exit':
+        # Check if an entry exists for today
+        cursor.execute('SELECT * FROM attendance WHERE employee_id = (SELECT employee_id FROM employees WHERE name = ?) AND date = ?', (name, today))
+        entry = cursor.fetchone()
+
+        if entry and entry[3] is None:  # If there's an entry but no exit time
+            cursor.execute('UPDATE attendance SET exit_time = ? WHERE record_id = ?',
+                           (datetime.now(), entry[0]))
+            conn.commit()
+            print(f"Logged exit for {name} at {datetime.now()}")
+        else:
+            print(f"No entry found for {name} to log exit.")
 
     conn.close()
 
@@ -242,7 +264,20 @@ def list_employees():
     conn.close()
     return render_template('list_employees.html', employees=employees)
 
-
+@app.route('/attendance_report', methods=['GET'])
+def attendance_report():
+    conn = sqlite3.connect('employee_attendance.db')
+    cursor = conn.cursor()
+    today = datetime.now().date()
+    cursor.execute('''
+    SELECT e.name, a.entry_time, a.exit_time
+    FROM attendance a
+    JOIN employees e ON a.employee_id = e.employee_id
+    WHERE a.date = ?
+    ''', (today,))
+    records = cursor.fetchall()
+    conn.close()
+    return render_template('attendance_report.html', records=records)
 
 if __name__ == '__main__':
     create_tables()  # Initialize the database tables

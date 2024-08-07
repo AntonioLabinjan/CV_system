@@ -285,10 +285,11 @@ def check_employee_route(name):
 def list_employees():
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT name, hourly_rate FROM employees')
+    cursor.execute('SELECT name, hourly_rate, employee_id FROM employees')
     employees = cursor.fetchall()
     conn.close()
     return render_template('list_employees.html', employees=employees)
+
 
 @app.route('/attendance_report', methods=['GET'])
 def attendance_report():
@@ -334,6 +335,7 @@ def payment_report():
     
     conn.close()
     return render_template('payment_report.html', payments=payments, today=today)
+
 
 import csv
 from flask import send_file, Response
@@ -388,6 +390,47 @@ def export_payment_report():
     return Response(output, mimetype="text/csv", headers={"Content-Disposition": "attachment;filename=payment_report.csv"})
 
 
+@app.route('/edit_employee/<int:employee_id>', methods=['GET', 'POST'])
+def edit_employee(employee_id):
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        hourly_rate = request.form['hourly_rate']
+        
+        # Update employee details in the database
+        cursor.execute('UPDATE employees SET name = ?, hourly_rate = ? WHERE employee_id = ?', (name, hourly_rate, employee_id))
+        conn.commit()
+        conn.close()
+        
+        # Reload known faces to reflect name changes
+        load_known_faces()
+        
+        return redirect(url_for('list_employees'))
+    
+    # Fetch the current employee details
+    cursor.execute('SELECT name, hourly_rate FROM employees WHERE employee_id = ?', (employee_id,))
+    employee = cursor.fetchone()
+    conn.close()
+    
+    return render_template('edit_employee.html', employee=employee, employee_id=employee_id)
+
+
+@app.route('/delete_employee/<int:employee_id>')
+def delete_employee(employee_id):
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    # Delete the employee record from the database
+    cursor.execute('DELETE FROM employees WHERE employee_id = ?', (employee_id,))
+    conn.commit()
+    conn.close()
+    
+    # Reload known faces to remove deleted employees
+    load_known_faces()
+    
+    return redirect(url_for('list_employees'))
 
 
 

@@ -7,8 +7,9 @@ import torch
 import sqlite3
 from datetime import datetime
 
-
+# Define paths
 DATASET_PATH = "C:/Users/Korisnik/Desktop/eaps/dataset"
+DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'employee_attendance.db')
 
 # Initialize CLIP model and processor
 model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
@@ -56,42 +57,44 @@ def load_known_faces():
 load_known_faces()
 
 def create_tables():
-    conn = sqlite3.connect('employee_attendance.db')
+    conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS employees (
         employee_id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL,
+        name TEXT NOT NULL UNIQUE,
         picture_folder TEXT NOT NULL,
         hourly_rate REAL NOT NULL DEFAULT 0.0
     );
     ''')
-
+    
+    print("Employee table - check")
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS attendance (
         record_id INTEGER PRIMARY KEY,
-        employee_id INTEGER,
+        name TEXT,
         entry_time TIMESTAMP,
         exit_time TIMESTAMP,
         date DATE,
-        FOREIGN KEY (employee_id) REFERENCES employees (employee_id)
+        FOREIGN KEY (name) REFERENCES employees (name)
     );
     ''')
 
+    print("Attendance table - check")
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS payments (
         payment_id INTEGER PRIMARY KEY,
-        employee_id INTEGER,
+        name TEXT,
         hours_worked REAL,
         overtime_hours REAL,
         vacation_days INTEGER,
         sick_days INTEGER,
         total_payment REAL,
-        FOREIGN KEY (employee_id) REFERENCES employees (employee_id)
+        FOREIGN KEY (name) REFERENCES employees (name)
     );
     ''')
-    
+    print("Payments table - check")
     conn.commit()
     conn.close()
 
@@ -119,9 +122,9 @@ def recognize_face(frame):
 # Route to stream video
 @app.route('/video_feed', methods=['GET', 'POST'])
 def video_feed():
+    global button_clicked
     if request.method == 'POST':
         action = request.args.get('action')
-        global button_clicked
         button_clicked = action
         return '', 204
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
@@ -167,58 +170,61 @@ def generate_frames():
                     log_attendance(name, 'entry')
                 elif button_clicked == 'exit' and name in logged_names:
                     log_attendance(name, 'exit')
-                if not message_printed:
-                    print(f"{name} recognized, door unlocked")
-                    message_printed = True
-            else:
-                if not message_printed:
-                    print("Person unknown, door remain locked")
-                    message_printed = True
+                    logged_names.remove(name)
 
-        # Encode the frame as JPEG
+                button_clicked = None  # Reset button click state
+
+            if not name and not message_printed:
+                print("Person unknown, door remains locked")
+                message_printed = True
+
+        # Convert the frame back to BGR (for display with OpenCV)
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         ret, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
-        
-        # Yield the frame to the client
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-    cap.release()
-
-# Function to log attendance to the database
+# Function to log attendance
 def log_attendance(name, action):
-    conn = sqlite3.connect('employee_attendance.db')
+    print(f"Attempting to log {action} for {name}")
+
+    conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
 
     today = datetime.now().date()
+    today_str = today.strftime('%Y-%m-%d')
+
+    now = datetime.now()
+    now_str = now.strftime('%Y-%m-%d %H:%M:%S')
+
+    print(f"Date: {today_str}, Time: {now_str}")
+
     if action == 'entry':
-        # Check if entry already exists for today
-        cursor.execute('SELECT * FROM attendance WHERE employee_id = (SELECT employee_id FROM employees WHERE name = ?) AND date = ?', (name, today))
+        cursor.execute('SELECT * FROM attendance WHERE name = ? AND date = ?', (name, today_str))
         entry = cursor.fetchone()
+        print(f"Existing entry: {entry}")
 
         if entry is None:
-            cursor.execute('INSERT INTO attendance (employee_id, entry_time, date) VALUES ((SELECT employee_id FROM employees WHERE name = ?), ?, ?)',
-                           (name, datetime.now(), today))
+            cursor.execute('INSERT INTO attendance (name, entry_time, date) VALUES (?, ?, ?)', (name, now_str, today_str))
             conn.commit()
-            print(f"Logged entry for {name} at {datetime.now()}, door unlocked")
+            print(f"Logged entry for {name} at {now_str}")
         else:
             print(f"Entry for {name} already exists for today.")
     elif action == 'exit':
-        # Check if an entry exists for today
-        cursor.execute('SELECT * FROM attendance WHERE employee_id = (SELECT employee_id FROM employees WHERE name = ?) AND date = ?', (name, today))
+        cursor.execute('SELECT * FROM attendance WHERE name = ? AND date = ?', (name, today_str))
         entry = cursor.fetchone()
+        print(f"Existing entry: {entry}")
 
-        if entry and entry[3] is None:  # If there's an entry but no exit time
-            cursor.execute('UPDATE attendance SET exit_time = ? WHERE record_id = ?',
-                           (datetime.now(), entry[0]))
+        if entry and entry[3] is None:
+            cursor.execute('UPDATE attendance SET exit_time = ? WHERE record_id = ?', (now_str, entry[0]))
             conn.commit()
-            print(f"Logged exit for {name} at {datetime.now()}")
+            print(f"Logged exit for {name} at {now_str}")
         else:
             print(f"No entry found for {name} to log exit.")
 
     conn.close()
 
-# Route for home page
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -235,17 +241,17 @@ def add_employee():
         images = request.files.getlist('images')
 
         # Create a new subfolder in the dataset directory
-        employee_dir = os.path.join('dataset', name)
+        employee_dir = os.path.join(DATASET_PATH, name)
         os.makedirs(employee_dir, exist_ok=True)
 
         for image in images:
-            # Save each uploaded image in the new employee's subfolder
+            #            # Save each uploaded image in the new employee's subfolder
             image_path = os.path.join(employee_dir, image.filename)
             image.save(image_path)
             add_known_face(image_path, name)
         
         # Add employee details to the database
-        conn = sqlite3.connect('employee_attendance.db')
+        conn = sqlite3.connect(DATABASE_PATH)
         cursor = conn.cursor()
         cursor.execute('INSERT INTO employees (name, picture_folder, hourly_rate) VALUES (?, ?, ?)', (name, employee_dir, hourly_rate))
         conn.commit()
@@ -255,25 +261,40 @@ def add_employee():
 
     return render_template('add_employee.html')
 
+def check_employee(name):
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT name FROM employees WHERE name = ?', (name,))
+    employee = cursor.fetchone()
+    conn.close()
+    return employee
+
+@app.route('/check_employee/<name>')
+def check_employee_route(name):
+    employee = check_employee(name)
+    if employee:
+        return f"Employee found: {employee[0]}"
+    else:
+        return "Employee not found"
+
 @app.route('/employees', methods=['GET'])
 def list_employees():
-    conn = sqlite3.connect('employee_attendance.db')
+    conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT employee_id, name, hourly_rate FROM employees')
+    cursor.execute('SELECT name, hourly_rate FROM employees')
     employees = cursor.fetchall()
     conn.close()
     return render_template('list_employees.html', employees=employees)
 
 @app.route('/attendance_report', methods=['GET'])
 def attendance_report():
-    conn = sqlite3.connect('employee_attendance.db')
+    conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     today = datetime.now().date()
     cursor.execute('''
-    SELECT e.name, a.entry_time, a.exit_time
-    FROM attendance a
-    JOIN employees e ON a.employee_id = e.employee_id
-    WHERE a.date = ?
+    SELECT name, entry_time, exit_time
+    FROM attendance
+    WHERE date = ?
     ''', (today,))
     records = cursor.fetchall()
     conn.close()

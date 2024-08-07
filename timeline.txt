@@ -31,23 +31,23 @@ Day 38-40: Develop functions to calculate work hours from entry and exit times. 
 Day 41-44: Implement payment calculation functions, including logic for overtime, vacation, and sick days.
 
 Week 7:
-Day 45-47: Integrate payment calculation functions with the database.
-Day 48-50: Create and test scripts to update payment records in the database.
-Day 51-52: Conduct initial testing and debugging of payment calculation and integration.
+Day 45-47: Integrate payment calculation functions with the database. # DONE
+Day 48-50: Create and test scripts to update payment records in the database. # DONE
+Day 51-52: Conduct initial testing and debugging of payment calculation and integration. # DONE
 
 Phase 4: User Interface Development (Weeks 8-10)
 
 Week 8:
-Day 53-55: Design wireframes and mockups for the user interface.
-Day 56-58: Set up the web framework (Flask/Django) and start building the frontend.
+Day 53-55: Design wireframes and mockups for the user interface. # DONE
+Day 56-58: Set up the web framework (Flask/Django) and start building the frontend. # DONE
 
 Week 9:
 Day 59-61: Develop the employee management interface, including forms for inputting and updating employee information. # DONE
 Day 62-64: Implement list view for employees with options to edit or delete records.
-Day 65-66: Integrate frontend with the backend to display and manage employee data.
+Day 65-66: Integrate frontend with the backend to display and manage employee data. 
 
 Week 10:
-Day 67-69: Develop attendance reporting interface to display daily attendance records.
+Day 67-69: Develop attendance reporting interface to display daily attendance records. # DONE
 Day 70-72: Create payroll report generation and export functionality.
 Day 73-74: Conduct initial testing of the user interface and make necessary adjustments.
 

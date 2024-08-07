@@ -43,8 +43,8 @@ Day 56-58: Set up the web framework (Flask/Django) and start building the fronte
 
 Week 9:
 Day 59-61: Develop the employee management interface, including forms for inputting and updating employee information. # DONE
-Day 62-64: Implement list view for employees with options to edit or delete records.
-Day 65-66: Integrate frontend with the backend to display and manage employee data. 
+Day 62-64: Implement list view for employees with options to edit or delete records. # DONE
+Day 65-66: Integrate frontend with the backend to display and manage employee data.  # DONE
 
 Week 10:
 Day 67-69: Develop attendance reporting interface to display daily attendance records. # DONE

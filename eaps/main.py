@@ -76,6 +76,7 @@ def create_tables():
         name TEXT,
         entry_time TIMESTAMP,
         exit_time TIMESTAMP,
+        work_hours REAL,
         date DATE,
         FOREIGN KEY (name) REFERENCES employees (name)
     );
@@ -217,9 +218,12 @@ def log_attendance(name, action):
         print(f"Existing entry: {entry}")
 
         if entry and entry[3] is None:
-            cursor.execute('UPDATE attendance SET exit_time = ? WHERE record_id = ?', (now_str, entry[0]))
+            entry_time = datetime.strptime(entry[2], '%Y-%m-%d %H:%M:%S')
+            exit_time = datetime.strptime(now_str, '%Y-%m-%d %H:%M:%S')
+            work_hours = (exit_time - entry_time).total_seconds() / 3600
+            cursor.execute('UPDATE attendance SET exit_time = ?, work_hours = ? WHERE record_id = ?', (now_str, work_hours, entry[0]))
             conn.commit()
-            print(f"Logged exit for {name} at {now_str}")
+            print(f"Logged exit for {name} at {now_str}, work hours: {work_hours:.2f}")
         else:
             print(f"No entry found for {name} to log exit.")
 
@@ -245,7 +249,7 @@ def add_employee():
         os.makedirs(employee_dir, exist_ok=True)
 
         for image in images:
-            #            # Save each uploaded image in the new employee's subfolder
+            # Save each uploaded image in the new employee's subfolder
             image_path = os.path.join(employee_dir, image.filename)
             image.save(image_path)
             add_known_face(image_path, name)
@@ -292,13 +296,16 @@ def attendance_report():
     cursor = conn.cursor()
     today = datetime.now().date()
     cursor.execute('''
-    SELECT name, entry_time, exit_time
+    SELECT name, entry_time, exit_time, work_hours
     FROM attendance
     WHERE date = ?
     ''', (today,))
     records = cursor.fetchall()
     conn.close()
-    return render_template('attendance_report.html', records=records)
+    return render_template('attendance_report.html', records=records, today=today)
+
+
+
 
 if __name__ == '__main__':
     create_tables()  # Initialize the database tables

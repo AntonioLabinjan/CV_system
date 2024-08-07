@@ -23,10 +23,20 @@
         h1 {
             margin-bottom: 20px;
         }
+        .export-btn {
+            margin-bottom: 20px;
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
     <h1>Payment Report for {{ today }}</h1>
+    <a href="{{ url_for('export_payment_report') }}" class="export-btn">Export to CSV</a>
     <table>
         <thead>
             <tr>

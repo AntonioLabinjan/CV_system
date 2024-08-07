@@ -335,6 +335,62 @@ def payment_report():
     conn.close()
     return render_template('payment_report.html', payments=payments, today=today)
 
+import csv
+from flask import send_file, Response
+from io import StringIO
+import sqlite3
+from datetime import datetime
+
+@app.route('/export_payment_report', methods=['GET'])
+def export_payment_report():
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    today = datetime.now().date()
+    first_day_of_month = today.replace(day=1)
+
+    cursor.execute('''
+    SELECT e.name, e.hourly_rate, SUM(a.work_hours)
+    FROM employees e
+    LEFT JOIN attendance a ON e.name = a.name
+    WHERE a.date BETWEEN ? AND ?
+    GROUP BY e.name
+    ''', (first_day_of_month, today))
+    
+    records = cursor.fetchall()
+    
+    payments = [
+        {
+            "name": record[0],
+            "hourly_rate": record[1],
+            "total_hours": record[2] if record[2] else 0,
+            "total_payment": record[1] * record[2] if record[2] else 0
+        }
+        for record in records
+    ]
+    
+    conn.close()
+
+    # Create a string buffer to write CSV data
+    output = StringIO()
+    writer = csv.writer(output)
+
+    # Write CSV headers
+    writer.writerow(['Employee Name', 'Hourly Rate', 'Total Hours Worked', 'Total Payment'])
+    
+    # Write CSV data
+    for payment in payments:
+        writer.writerow([payment["name"], payment["hourly_rate"], payment["total_hours"], payment["total_payment"]])
+    
+    # Seek to the beginning of the stream
+    output.seek(0)
+
+    return Response(output, mimetype="text/csv", headers={"Content-Disposition": "attachment;filename=payment_report.csv"})
+
+
+
+
+
 
 if __name__ == '__main__':
     create_tables()  # Initialize the database tables

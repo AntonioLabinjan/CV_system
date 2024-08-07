@@ -304,7 +304,36 @@ def attendance_report():
     conn.close()
     return render_template('attendance_report.html', records=records, today=today)
 
+@app.route('/payment_report', methods=['GET'])
+def payment_report():
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    today = datetime.now().date()
+    first_day_of_month = today.replace(day=1)
 
+    cursor.execute('''
+    SELECT e.name, e.hourly_rate, SUM(a.work_hours)
+    FROM employees e
+    LEFT JOIN attendance a ON e.name = a.name
+    WHERE a.date BETWEEN ? AND ?
+    GROUP BY e.name
+    ''', (first_day_of_month, today))
+    
+    records = cursor.fetchall()
+    
+    payments = [
+        {
+            "name": record[0],
+            "hourly_rate": record[1],
+            "total_hours": record[2] if record[2] else 0,
+            "total_payment": record[1] * record[2] if record[2] else 0
+        }
+        for record in records
+    ]
+    
+    conn.close()
+    return render_template('payment_report.html', payments=payments, today=today)
 
 
 if __name__ == '__main__':

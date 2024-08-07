@@ -20,14 +20,14 @@ Day 22-24: Train the facial recognition model using the prepared dataset. # DONE
 Day 25-28: Develop the face recognition algorithm to identify employees. # DONE
 
 Week 5:
-Day 29: Implement a attendance list template (list all attendances for each employee along with date&time for each attendance) + somehow check if person is going in or out (prvo da se samo odabere, pole će bit 2 kamere)
+Day 29: Implement a attendance list template (list all attendances for each employee along with date&time for each attendance) + somehow check if person is going in or out (prvo da se samo odabere, pole će bit 2 kamere) # DONE
 Day 29-31: Integrate the face recognition system with the smart lock (Arduino or similar).
 Day 32-35: Implement and test the logic to open/close doors based on recognition results.
 Day 36-37: Print simulation statements ("Person recognized, door opened" / "Person unknown, door closed").
 
 Phase 3: Payment Calculation and Business Logic (Weeks 6-7)
 Week 6:
-Day 38-40: Develop functions to calculate work hours from entry and exit times.
+Day 38-40: Develop functions to calculate work hours from entry and exit times. # DONE
 Day 41-44: Implement payment calculation functions, including logic for overtime, vacation, and sick days.
 
 Week 7:
@@ -42,7 +42,7 @@ Day 53-55: Design wireframes and mockups for the user interface.
 Day 56-58: Set up the web framework (Flask/Django) and start building the frontend.
 
 Week 9:
-Day 59-61: Develop the employee management interface, including forms for inputting and updating employee information.
+Day 59-61: Develop the employee management interface, including forms for inputting and updating employee information. # DONE
 Day 62-64: Implement list view for employees with options to edit or delete records.
 Day 65-66: Integrate frontend with the backend to display and manage employee data.
 

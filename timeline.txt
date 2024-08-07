@@ -48,7 +48,7 @@ Day 65-66: Integrate frontend with the backend to display and manage employee da
 
 Week 10:
 Day 67-69: Develop attendance reporting interface to display daily attendance records. # DONE
-Day 70-72: Create payroll report generation and export functionality.
+Day 70-72: Create payroll report generation and export functionality. # DONE
 Day 73-74: Conduct initial testing of the user interface and make necessary adjustments.
 
 Phase 5: Testing and Deployment (Weeks 11-12)

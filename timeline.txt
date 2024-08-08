@@ -28,7 +28,7 @@ Day 36-37: Print simulation statements ("Person recognized, door opened" / "Pers
 Phase 3: Payment Calculation and Business Logic (Weeks 6-7)
 Week 6:
 Day 38-40: Develop functions to calculate work hours from entry and exit times. # DONE
-Day 41-44: Implement payment calculation functions, including logic for overtime, vacation, and sick days.
+Day 41-44: Implement payment calculation functions, including logic for overtime, vacation, and sick days. # DONE
 
 Week 7:
 Day 45-47: Integrate payment calculation functions with the database. # DONE

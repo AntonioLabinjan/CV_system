@@ -1,0 +1,18 @@
+<!-- log_absence_success.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Absence Logged Successfully</title>
+</head>
+<body>
+    <h1>Absence Logged Successfully</h1>
+    <p>Employee: <strong>{{ name }}</strong></p>
+    <p>Date of Absence: <strong>{{ date }}</strong></p>
+    <p>Type of Absence: <strong>{{ absence_type }}</strong></p>
+    
+    <br>
+    <a href="{{ url_for('index') }}">Return to Home</a><br>
+    <a href="{{ url_for('log_absence') }}">Log Another Absence</a><br>
+    <a href="{{ url_for('attendance_report') }}">View Attendance Report</a>
+</body>
+</html>

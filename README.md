@@ -1,7 +1,7 @@
-# MY_BIGGEST_PROJECT_YET
+### MY_BIGGEST_PROJECT_YET
 
-
-# EAPS FOLDER JE NAJBITNIJI
+## Dodat email notifikacije i neke grafikone
+### EAPS FOLDER JE NAJBITNIJI
 
 Project Proposal: Smart Employee Attendance and Payment System
 Project Overview

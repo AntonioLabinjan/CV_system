@@ -71,16 +71,18 @@ def create_tables():
     
     print("Employee table - check")
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS attendance (
-        record_id INTEGER PRIMARY KEY,
-        name TEXT,
-        entry_time TIMESTAMP,
-        exit_time TIMESTAMP,
-        work_hours REAL,
-        date DATE,
-        FOREIGN KEY (name) REFERENCES employees (name)
-    );
-    ''')
+CREATE TABLE IF NOT EXISTS attendance (
+    record_id INTEGER PRIMARY KEY,
+    name TEXT,
+    entry_time TIMESTAMP,
+    exit_time TIMESTAMP,
+    work_hours REAL,
+    overtime_hours REAL DEFAULT 0.0,
+    date DATE,
+    FOREIGN KEY (name) REFERENCES employees (name)
+);
+''')
+
 
     print("Attendance table - check")
     cursor.execute('''
@@ -233,14 +235,20 @@ def log_attendance(name, action):
         if entry and entry[3] is None:
             entry_time = datetime.strptime(entry[2], '%Y-%m-%d %H:%M:%S')
             exit_time = datetime.strptime(now_str, '%Y-%m-%d %H:%M:%S')
-            work_hours = (exit_time - entry_time).total_seconds() / 3600
-            cursor.execute('UPDATE attendance SET exit_time = ?, work_hours = ? WHERE record_id = ?', (now_str, work_hours, entry[0]))
+            total_work_hours = (exit_time - entry_time).total_seconds() / 3600
+
+            regular_hours = min(total_work_hours, 8)
+            overtime_hours = max(total_work_hours - 8, 0)
+
+            cursor.execute('UPDATE attendance SET exit_time = ?, work_hours = ?, overtime_hours = ? WHERE record_id = ?', 
+                           (now_str, regular_hours, overtime_hours, entry[0]))
             conn.commit()
-            print(f"Logged exit for {name} at {now_str}, work hours: {work_hours:.2f}")
+            print(f"Logged exit for {name} at {now_str}, work hours: {total_work_hours:.2f}, overtime: {overtime_hours:.2f}")
         else:
             print(f"No entry found for {name} to log exit.")
 
     conn.close()
+
 
 @app.route('/')
 def index():
@@ -326,9 +334,9 @@ def payment_report():
     today = datetime.now().date()
     first_day_of_month = today.replace(day=1)
 
-    # Calculate total hours worked
+    # Calculate total hours worked and overtime
     cursor.execute('''
-    SELECT e.name, e.hourly_rate, SUM(a.work_hours)
+    SELECT e.name, e.hourly_rate, SUM(a.work_hours), SUM(a.overtime_hours)
     FROM employees e
     LEFT JOIN attendance a ON e.name = a.name
     WHERE a.date BETWEEN ? AND ?
@@ -339,29 +347,62 @@ def payment_report():
 
     # Calculate sick days and vacation days
     cursor.execute('''
-    SELECT name, type, COUNT(*) as days_count
-    FROM absences
-    WHERE date BETWEEN ? AND ?
-    GROUP BY name, type
+    SELECT e.name, e.hourly_rate, 
+           COALESCE(SUM(CASE WHEN type = 'sick' THEN 1 ELSE 0 END), 0) as sick_days, 
+           COALESCE(SUM(CASE WHEN type = 'vacation' THEN 1 ELSE 0 END), 0) as vacation_days
+    FROM employees e
+    LEFT JOIN absences a ON e.name = a.name
+    WHERE a.date BETWEEN ? AND ?
+    GROUP BY e.name, e.hourly_rate
     ''', (first_day_of_month, today))
     
     absence_records = cursor.fetchall()
-    absence_data = {}
-    for record in absence_records:
-        name, absence_type, days_count = record
-        if name not in absence_data:
-            absence_data[name] = {'sick': 0, 'vacation': 0}
-        absence_data[name][absence_type] = days_count
-    
-    payments = []
+
+    # Merge work and absence records
+    employee_data = {record[0]: {
+        "name": record[0],
+        "hourly_rate": record[1],
+        "total_hours": 0,
+        "overtime_hours": 0,
+        "sick_days": record[2],
+        "vacation_days": record[3],
+        "total_payment": 0
+    } for record in absence_records}
+
     for work_record in work_records:
-        name, hourly_rate, total_hours = work_record
-        total_hours = total_hours if total_hours else 0
-        sick_days = absence_data.get(name, {}).get('sick', 0)
-        vacation_days = absence_data.get(name, {}).get('vacation', 0)
+        name = work_record[0]
+        hourly_rate = work_record[1]
+        total_hours = work_record[2] if work_record[2] else 0
+        overtime_hours = work_record[3] if work_record[3] else 0
+
+        if name not in employee_data:
+            employee_data[name] = {
+                "name": name,
+                "hourly_rate": hourly_rate,
+                "total_hours": total_hours,
+                "overtime_hours": overtime_hours,
+                "sick_days": 0,
+                "vacation_days": 0,
+                "total_payment": 0
+            }
+        else:
+            employee_data[name]["total_hours"] = total_hours
+            employee_data[name]["overtime_hours"] = overtime_hours
+
+    payments = []
+    for data in employee_data.values():
+        name = data["name"]
+        hourly_rate = data["hourly_rate"]
+        total_hours = data["total_hours"]
+        overtime_hours = data["overtime_hours"]
+        sick_days = data["sick_days"]
+        vacation_days = data["vacation_days"]
         
-        # Payment for work hours
+        # Payment for work hours (excluding overtime)
         work_payment = hourly_rate * total_hours
+
+        # Payment for overtime hours (120% of hourly rate)
+        overtime_payment = overtime_hours * hourly_rate * 1.2
 
         # Payment for vacation days
         vacation_payment = 8 * hourly_rate * vacation_days
@@ -369,19 +410,17 @@ def payment_report():
         # Payment for sick days (70% of 8-hour workday)
         sick_payment = 0.7 * 8 * hourly_rate * sick_days
 
-        total_payment = work_payment + vacation_payment + sick_payment
+        # Calculate the total payment
+        total_payment = work_payment + overtime_payment + vacation_payment + sick_payment
+        data["total_payment"] = total_payment
 
-        payments.append({
-            "name": name,
-            "hourly_rate": hourly_rate,
-            "total_hours": total_hours,
-            "total_payment": total_payment,
-            "sick_days": sick_days,
-            "vacation_days": vacation_days
-        })
+        payments.append(data)
     
     conn.close()
     return render_template('payment_report.html', payments=payments, today=today)
+
+
+
 
 
 

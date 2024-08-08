@@ -95,9 +95,22 @@ def create_tables():
         FOREIGN KEY (name) REFERENCES employees (name)
     );
     ''')
-    print("Payments table - check")
+
+    # New table for sick days and vacation days
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS absences (
+        absence_id INTEGER PRIMARY KEY,
+        name TEXT,
+        date DATE,
+        type TEXT,
+        FOREIGN KEY (name) REFERENCES employees (name)
+    );
+    ''')
+    
+    print("Absences table - check")
     conn.commit()
     conn.close()
+
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -313,6 +326,7 @@ def payment_report():
     today = datetime.now().date()
     first_day_of_month = today.replace(day=1)
 
+    # Calculate total hours worked
     cursor.execute('''
     SELECT e.name, e.hourly_rate, SUM(a.work_hours)
     FROM employees e
@@ -321,20 +335,54 @@ def payment_report():
     GROUP BY e.name
     ''', (first_day_of_month, today))
     
-    records = cursor.fetchall()
+    work_records = cursor.fetchall()
+
+    # Calculate sick days and vacation days
+    cursor.execute('''
+    SELECT name, type, COUNT(*) as days_count
+    FROM absences
+    WHERE date BETWEEN ? AND ?
+    GROUP BY name, type
+    ''', (first_day_of_month, today))
     
-    payments = [
-        {
-            "name": record[0],
-            "hourly_rate": record[1],
-            "total_hours": record[2] if record[2] else 0,
-            "total_payment": record[1] * record[2] if record[2] else 0
-        }
-        for record in records
-    ]
+    absence_records = cursor.fetchall()
+    absence_data = {}
+    for record in absence_records:
+        name, absence_type, days_count = record
+        if name not in absence_data:
+            absence_data[name] = {'sick': 0, 'vacation': 0}
+        absence_data[name][absence_type] = days_count
+    
+    payments = []
+    for work_record in work_records:
+        name, hourly_rate, total_hours = work_record
+        total_hours = total_hours if total_hours else 0
+        sick_days = absence_data.get(name, {}).get('sick', 0)
+        vacation_days = absence_data.get(name, {}).get('vacation', 0)
+        
+        # Payment for work hours
+        work_payment = hourly_rate * total_hours
+
+        # Payment for vacation days
+        vacation_payment = 8 * hourly_rate * vacation_days
+
+        # Payment for sick days (70% of 8-hour workday)
+        sick_payment = 0.7 * 8 * hourly_rate * sick_days
+
+        total_payment = work_payment + vacation_payment + sick_payment
+
+        payments.append({
+            "name": name,
+            "hourly_rate": hourly_rate,
+            "total_hours": total_hours,
+            "total_payment": total_payment,
+            "sick_days": sick_days,
+            "vacation_days": vacation_days
+        })
     
     conn.close()
     return render_template('payment_report.html', payments=payments, today=today)
+
 
 
 import csv
@@ -433,6 +481,23 @@ def delete_employee(employee_id):
     return redirect(url_for('list_employees'))
 
 
+@app.route('/log_absence', methods=['GET', 'POST'])
+def log_absence():
+    if request.method == 'POST':
+        name = request.form['name']
+        date = request.form['date']
+        absence_type = request.form['absence_type']
+        
+        # Insert the absence into the database
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO absences (name, date, type) VALUES (?, ?, ?)', (name, date, absence_type))
+        conn.commit()
+        conn.close()
+        
+        return render_template('log_absence_success.html', name=name, date=date, absence_type=absence_type)
+    
+    return render_template('log_absence.html')
 
 
 if __name__ == '__main__':

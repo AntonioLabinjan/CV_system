@@ -556,6 +556,137 @@ def log_absence():
     return render_template('log_absence.html')
 
 
+import matplotlib.pyplot as plt
+from io import BytesIO
+from flask import send_file
+
+# Visualization route for attendance overview
+@app.route('/attendance_overview')
+def attendance_overview():
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+    SELECT name, COUNT(*) as days_present
+    FROM attendance
+    WHERE date >= date('now', 'start of month')
+    GROUP BY name
+    ''')
+    
+    records = cursor.fetchall()
+    conn.close()
+    
+    names = [record[0] for record in records]
+    days_present = [record[1] for record in records]
+
+    fig, ax = plt.subplots()
+    ax.bar(names, days_present, color='blue')
+    ax.set_xlabel('Employee')
+    ax.set_ylabel('Days Present')
+    ax.set_title('Attendance Overview - Current Month')
+    plt.xticks(rotation=45, ha='right')
+    
+    # Save the plot to a BytesIO object and send it as a response
+    img = BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    return send_file(img, mimetype='image/png')
+
+# Visualization route for work hours distribution
+@app.route('/work_hours_distribution')
+def work_hours_distribution():
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+    SELECT e.name, SUM(a.work_hours) as total_hours, SUM(a.overtime_hours) as overtime_hours
+    FROM employees e
+    LEFT JOIN attendance a ON e.name = a.name
+    WHERE a.date >= date('now', 'start of month')
+    GROUP BY e.name
+    ''')
+    
+    records = cursor.fetchall()
+    conn.close()
+    
+    names = [record[0] for record in records]
+    total_hours = [record[1] if record[1] else 0 for record in records]
+    overtime_hours = [record[2] if record[2] else 0 for record in records]
+    
+    fig, ax = plt.subplots()
+    width = 0.35
+    x = np.arange(len(names))
+    ax.bar(x - width/2, total_hours, width, label='Total Hours')
+    ax.bar(x + width/2, overtime_hours, width, label='Overtime Hours')
+    
+    ax.set_xlabel('Employee')
+    ax.set_ylabel('Hours Worked')
+    ax.set_title('Work Hours Distribution - Current Month')
+    ax.set_xticks(x)
+    ax.set_xticklabels(names, rotation=45, ha='right')
+    ax.legend()
+
+    # Save the plot to a BytesIO object and send it as a response
+    img = BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    return send_file(img, mimetype='image/png')
+
+# Visualization route for payment breakdown
+@app.route('/payment_breakdown')
+def payment_breakdown():
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    today = datetime.now().date()
+    first_day_of_month = today.replace(day=1)
+
+    cursor.execute('''
+    SELECT e.name, e.hourly_rate, SUM(a.work_hours), SUM(a.overtime_hours),
+           COALESCE(SUM(CASE WHEN abs.type = 'sick' THEN 1 ELSE 0 END), 0) as sick_days,
+           COALESCE(SUM(CASE WHEN abs.type = 'vacation' THEN 1 ELSE 0 END), 0) as vacation_days
+    FROM employees e
+    LEFT JOIN attendance a ON e.name = a.name
+    LEFT JOIN absences abs ON e.name = abs.name
+    WHERE a.date BETWEEN ? AND ?
+    GROUP BY e.name
+    ''', (first_day_of_month, today))
+
+    records = cursor.fetchall()
+    conn.close()
+    
+    names = [record[0] for record in records]
+    total_payments = []
+    
+    for record in records:
+        hourly_rate = record[1]
+        total_hours = record[2] if record[2] else 0
+        overtime_hours = record[3] if record[3] else 0
+        sick_days = record[4] if record[4] else 0
+        vacation_days = record[5] if record[5] else 0
+        
+        # Payment calculations
+        work_payment = hourly_rate * total_hours
+        overtime_payment = overtime_hours * hourly_rate * 1.2
+        vacation_payment = 8 * hourly_rate * vacation_days
+        sick_payment = 0.7 * 8 * hourly_rate * sick_days
+        
+        total_payment = work_payment + overtime_payment + vacation_payment + sick_payment
+        total_payments.append(total_payment)
+    
+    fig, ax = plt.subplots()
+    ax.bar(names, total_payments, color='green')
+    ax.set_xlabel('Employee')
+    ax.set_ylabel('Total Payment')
+    ax.set_title('Payment Breakdown - Current Month')
+    plt.xticks(rotation=45, ha='right')
+    
+    # Save the plot to a BytesIO object and send it as a response
+    img = BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    return send_file(img, mimetype='image/png')
+
 
 if __name__ == '__main__':
     create_tables()  # Initialize the database tables

@@ -7,6 +7,17 @@ import torch
 import sqlite3
 from datetime import datetime
 
+from plyer import notification
+
+def send_notification(title, message):
+    notification.notify(
+        title=title,
+        message=message,
+        app_name='Employee Attendance System',
+        timeout=10  # Notification will disappear after 10 seconds
+    )
+
+
 # Define paths
 DATASET_PATH = "C:/Users/Korisnik/Desktop/eaps/dataset"
 DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'employee_attendance.db')
@@ -225,6 +236,7 @@ def log_attendance(name, action):
             cursor.execute('INSERT INTO attendance (name, entry_time, date) VALUES (?, ?, ?)', (name, now_str, today_str))
             conn.commit()
             print(f"Logged entry for {name} at {now_str}")
+            send_notification(f"Entry Logged", f"{name} entered at {now_str}")
         else:
             print(f"Entry for {name} already exists for today.")
     elif action == 'exit':
@@ -244,10 +256,12 @@ def log_attendance(name, action):
                            (now_str, regular_hours, overtime_hours, entry[0]))
             conn.commit()
             print(f"Logged exit for {name} at {now_str}, work hours: {total_work_hours:.2f}, overtime: {overtime_hours:.2f}")
+            send_notification(f"Exit Logged", f"{name} exited at {now_str}")
         else:
             print(f"No entry found for {name} to log exit.")
 
     conn.close()
+
 
 
 @app.route('/')
@@ -533,10 +547,14 @@ def log_absence():
         cursor.execute('INSERT INTO absences (name, date, type) VALUES (?, ?, ?)', (name, date, absence_type))
         conn.commit()
         conn.close()
+
+        # Send notification for the logged absence
+        send_notification(f"Absence Logged", f"{name} logged a {absence_type} on {date}")
         
         return render_template('log_absence_success.html', name=name, date=date, absence_type=absence_type)
     
     return render_template('log_absence.html')
+
 
 
 if __name__ == '__main__':

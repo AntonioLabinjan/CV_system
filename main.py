@@ -237,6 +237,7 @@ def log_attendance(name, action):
             conn.commit()
             print(f"Logged entry for {name} at {now_str}")
             send_notification(f"Entry Logged", f"{name} entered at {now_str}")
+            speak_message(f"Attendance for {name} successfully logged at {now_str} on {today_str}")
         else:
             print(f"Entry for {name} already exists for today.")
     elif action == 'exit':
@@ -257,10 +258,12 @@ def log_attendance(name, action):
             conn.commit()
             print(f"Logged exit for {name} at {now_str}, work hours: {total_work_hours:.2f}, overtime: {overtime_hours:.2f}")
             send_notification(f"Exit Logged", f"{name} exited at {now_str}")
+            speak_message(f"Attendance for {name} successfully logged at {now_str} on {today_str}")
         else:
             print(f"No entry found for {name} to log exit.")
 
     conn.close()
+
 
 
 
@@ -687,6 +690,12 @@ def payment_breakdown():
     img.seek(0)
     return send_file(img, mimetype='image/png')
 
+import pyttsx3
+
+def speak_message(message):
+    engine = pyttsx3.init()
+    engine.say(message)
+    engine.runAndWait()
 
 if __name__ == '__main__':
     create_tables()  # Initialize the database tables

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #video-container {
+            margin-bottom: 20px;
+        }
+        #chat-window {
+            border: 1px solid #ccc;
+            padding: 10px;
+            width: 100%;
+            max-width: 600px;
+            height: 300px;
+            overflow-y: scroll;
+            margin-bottom: 20px;
+        }
+        #chat-form {
+            display: flex;
+            width: 100%;
+            max-width: 600px;
+        }
+        #message {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Employee Chat</h1>
+
+    <!-- Video feed container -->
+    <div id="video-container">
+        <img id="video-feed" src="{{ url_for('video_feed') }}" alt="Video Feed">
+    </div>
+
+    <!-- Chat window -->
+    <div id="chat-window">
+        {% for message in chat_history %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+
+    <!-- Chat form -->
+    <form id="chat-form" method="POST">
+        <input type="text" name="message" id="message" placeholder="Type your message here" required>
+        <button type="submit">Send</button>
+    </form>
+
+    <script>
+        document.getElementById('chat-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const message = document.getElementById('message').value;
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `message=${message}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const chatWindow = document.getElementById('chat-window');
+                    const newMessage = document.createElement('p');
+                    newMessage.textContent = data.chat_message;
+                    chatWindow.appendChild(newMessage);
+                    document.getElementById('message').value = '';
+                    chatWindow.scrollTop = chatWindow.scrollHeight; 
+                }
+            });
+        });
+    </script>
+</body>
+</html>

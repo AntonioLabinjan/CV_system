@@ -1,7 +1,7 @@
 import os
 import cv2
 import numpy as np
-from flask import Flask, Response, render_template, request, redirect, url_for
+from flask import Flask, Response, render_template, request, redirect, url_for, jsonify
 from transformers import CLIPProcessor, CLIPModel
 import torch
 import sqlite3
@@ -119,8 +119,12 @@ CREATE TABLE IF NOT EXISTS attendance (
         FOREIGN KEY (name) REFERENCES employees (name)
     );
     ''')
-    
     print("Absences table - check")
+
+    cursor.execute('''
+                   CREATE TABLE IF NOT EXISTS chat (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, message TEXT, time TEXT)''')
+    
+    print("Chat table - check")
     conn.commit()
     conn.close()
 
@@ -145,6 +149,7 @@ def recognize_face(frame):
         name = known_face_names[index]
         return name
     return None
+
 
 # Route to stream video
 @app.route('/video_feed', methods=['GET', 'POST'])
@@ -696,6 +701,35 @@ def speak_message(message):
     engine = pyttsx3.init()
     engine.say(message)
     engine.runAndWait()
+
+chat_history = []
+
+@app.route('/chat', methods=['GET', 'POST'])
+def chat():
+    if request.method == 'POST':
+        message = request.form.get('message')
+
+        # Here you should recognize the person using a current frame
+        cap = cv2.VideoCapture(0)
+        success, frame = cap.read()
+        if success:
+            name = recognize_face(frame)
+            person_name = name if name else "Unknown"
+        else:
+            person_name = "Unknown"
+
+        cap.release()
+
+        # Format the chat message
+        chat_message = f"{person_name}: {message}"
+
+        # Append the message to the chat history
+        chat_history.append(chat_message)
+
+        return jsonify({"status": "success", "chat_message": chat_message})
+
+    return render_template('chat.html', chat_history=chat_history)
+
 
 if __name__ == '__main__':
     create_tables()  # Initialize the database tables

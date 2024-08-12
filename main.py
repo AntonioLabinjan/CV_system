@@ -125,12 +125,55 @@ CREATE TABLE IF NOT EXISTS attendance (
                    CREATE TABLE IF NOT EXISTS chat (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, message TEXT, time TEXT)''')
     
     print("Chat table - check")
+
+    cursor.execute('''
+                   CREATE TABLE IF NOT EXISTS worktime_start (id INTEGER PRIMARY KEY AUTOINCREMENT, start_time TIMESTAMP)''')
+    print ("Worktime start table - check")
+
     conn.commit()
     conn.close()
 
 
 # Initialize Flask app
 app = Flask(__name__)
+
+@app.route('/set_starttime', methods=['GET', 'POST'])
+def set_starttime():
+    if request.method == 'POST':
+        time = request.form['start_time']
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO worktime_start (start_time) VALUES (?)', (time,))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('index'))
+    return render_template('start_time_set.html')
+
+from flask import flash, redirect, url_for
+
+@app.route('/check_starttime', methods=['GET', 'POST'])
+def check_starttime():
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    # Fetch the current start time from the database
+    cursor.execute('SELECT start_time FROM worktime_start ORDER BY id DESC LIMIT 1')
+    result = cursor.fetchone()
+    
+    conn.close()
+    
+    # If a start time exists, print it in the terminal
+    if result:
+        start_time = result[0]
+        print(f'Current start time is: {start_time}')
+    else:
+        print('No start time has been set.')
+    
+    return redirect(url_for('index'))
+
+
+
+
 
 # Function to recognize face in the frame
 def recognize_face(frame):

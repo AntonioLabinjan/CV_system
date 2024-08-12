@@ -261,56 +261,108 @@ def generate_frames():
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 # Function to log attendance
+import sqlite3
+import time
+from datetime import datetime
+
+
 def log_attendance(name, action):
     print(f"Attempting to log {action} for {name}")
 
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
+    conn = None
+    cursor = None
 
-    today = datetime.now().date()
-    today_str = today.strftime('%Y-%m-%d')
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
 
-    now = datetime.now()
-    now_str = now.strftime('%Y-%m-%d %H:%M:%S')
+        today = datetime.now().date()
+        today_str = today.strftime('%Y-%m-%d')
 
-    print(f"Date: {today_str}, Time: {now_str}")
+        now = datetime.now()
+        now_str = now.strftime('%Y-%m-%d %H:%M:%S')
 
-    if action == 'entry':
-        cursor.execute('SELECT * FROM attendance WHERE name = ? AND date = ?', (name, today_str))
-        entry = cursor.fetchone()
-        print(f"Existing entry: {entry}")
+        print(f"Date: {today_str}, Time: {now_str}")
 
-        if entry is None:
-            cursor.execute('INSERT INTO attendance (name, entry_time, date) VALUES (?, ?, ?)', (name, now_str, today_str))
-            conn.commit()
-            print(f"Logged entry for {name} at {now_str}")
-            send_notification(f"Entry Logged", f"{name} entered at {now_str}")
-            speak_message(f"Attendance for {name} successfully logged at {now_str} on {today_str}")
-        else:
-            print(f"Entry for {name} already exists for today.")
-    elif action == 'exit':
-        cursor.execute('SELECT * FROM attendance WHERE name = ? AND date = ?', (name, today_str))
-        entry = cursor.fetchone()
-        print(f"Existing entry: {entry}")
+        if action == 'entry':
+            cursor.execute('SELECT start_time FROM worktime_start ORDER BY id DESC LIMIT 1')
+            start_time_record = cursor.fetchone()
+            
+            if start_time_record:
+                start_time_str = start_time_record[0]
+                try:
+                    start_time = datetime.strptime(f'{today_str} {start_time_str}', '%Y-%m-%d %H:%M')
+                except ValueError:
+                    start_time = datetime.strptime(f'{today_str} {start_time_str}', '%Y-%m-%d %H:%M:%S')
 
-        if entry and entry[3] is None:
-            entry_time = datetime.strptime(entry[2], '%Y-%m-%d %H:%M:%S')
-            exit_time = datetime.strptime(now_str, '%Y-%m-%d %H:%M:%S')
-            total_work_hours = (exit_time - entry_time).total_seconds() / 3600
+                entry_time = now
+                
+                # Check if the entry time is later than the start time
+                if entry_time > start_time:
+                    print("LATE ENTRANCE")
 
-            regular_hours = min(total_work_hours, 8)
-            overtime_hours = max(total_work_hours - 8, 0)
+            cursor.execute('SELECT * FROM attendance WHERE name = ? AND date = ?', (name, today_str))
+            entry = cursor.fetchone()
+            print(f"Existing entry: {entry}")
 
-            cursor.execute('UPDATE attendance SET exit_time = ?, work_hours = ?, overtime_hours = ? WHERE record_id = ?', 
-                           (now_str, regular_hours, overtime_hours, entry[0]))
-            conn.commit()
-            print(f"Logged exit for {name} at {now_str}, work hours: {total_work_hours:.2f}, overtime: {overtime_hours:.2f}")
-            send_notification(f"Exit Logged", f"{name} exited at {now_str}")
-            speak_message(f"Attendance for {name} successfully logged at {now_str} on {today_str}")
-        else:
-            print(f"No entry found for {name} to log exit.")
+            if entry is None:
+                # Retry mechanism for database lock issue
+                retries = 3
+                while retries > 0:
+                    try:
+                        cursor.execute('INSERT INTO attendance (name, entry_time, date) VALUES (?, ?, ?)', 
+                                       (name, now_str, today_str))
+                        conn.commit()
+                        print(f"Logged entry for {name} at {now_str}")
+                        send_notification(f"Entry Logged", f"{name} entered at {now_str}")
+                        speak_message(f"Attendance for {name} successfully logged at {now_str} on {today_str}")
+                        break
+                    except sqlite3.OperationalError as e:
+                        if "locked" in str(e):
+                            print("Database is locked, retrying...")
+                            time.sleep(1)  # Wait for 1 second before retrying
+                            retries -= 1
+                        else:
+                            raise e
+                else:
+                    print(f"Failed to log entry for {name} due to database lock.")
+            else:
+                print(f"Entry for {name} already exists for today.")
+        
+        # Handling exit case
+        elif action == 'exit':
+            cursor.execute('SELECT * FROM attendance WHERE name = ? AND date = ?', (name, today_str))
+            entry = cursor.fetchone()
+            print(f"Existing entry: {entry}")
 
-    conn.close()
+            if entry and entry[3] is None:
+                entry_time = datetime.strptime(entry[2], '%Y-%m-%d %H:%M:%S')
+                exit_time = datetime.strptime(now_str, '%Y-%m-%d %H:%M:%S')
+                total_work_hours = (exit_time - entry_time).total_seconds() / 3600
+
+                regular_hours = min(total_work_hours, 8)
+                overtime_hours = max(total_work_hours - 8, 0)
+
+                cursor.execute('UPDATE attendance SET exit_time = ?, work_hours = ?, overtime_hours = ? WHERE record_id = ?', 
+                               (now_str, regular_hours, overtime_hours, entry[0]))
+                conn.commit()
+                print(f"Logged exit for {name} at {now_str}, work hours: {total_work_hours:.2f}, overtime: {overtime_hours:.2f}")
+                send_notification(f"Exit Logged", f"{name} exited at {now_str}")
+                speak_message(f"Attendance for {name} successfully logged at {now_str} on {today_str}")
+            else:
+                print(f"No entry found for {name} to log exit.")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+
 
 
 

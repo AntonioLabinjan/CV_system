@@ -1,3 +1,6 @@
+## DALJE MORAN SMISLIT MEHANIZAM KOJI ĆE ZA SVAKI LATE_ENTRANCE DAT PENALTY KOJI UMANJUJE PLAĆU ZA ODREĐENI IZNOS
+
+
 import os
 import cv2
 import numpy as np
@@ -81,21 +84,23 @@ def create_tables():
     ''')
     
     print("Employee table - check")
+    
     cursor.execute('''
-CREATE TABLE IF NOT EXISTS attendance (
-    record_id INTEGER PRIMARY KEY,
-    name TEXT,
-    entry_time TIMESTAMP,
-    exit_time TIMESTAMP,
-    work_hours REAL,
-    overtime_hours REAL DEFAULT 0.0,
-    date DATE,
-    FOREIGN KEY (name) REFERENCES employees (name)
-);
-''')
-
+    CREATE TABLE IF NOT EXISTS attendance (
+        record_id INTEGER PRIMARY KEY,
+        name TEXT,
+        entry_time TIMESTAMP,
+        exit_time TIMESTAMP,
+        work_hours REAL,
+        overtime_hours REAL DEFAULT 0.0,
+        date DATE,
+        late_entrance_penalty INTEGER DEFAULT 0,
+        FOREIGN KEY (name) REFERENCES employees (name)
+    );
+    ''')
 
     print("Attendance table - check")
+    
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS payments (
         payment_id INTEGER PRIMARY KEY,
@@ -104,6 +109,7 @@ CREATE TABLE IF NOT EXISTS attendance (
         overtime_hours REAL,
         vacation_days INTEGER,
         sick_days INTEGER,
+        late_entrance_penalty INTEGER DEFAULT 0,
         total_payment REAL,
         FOREIGN KEY (name) REFERENCES employees (name)
     );
@@ -119,6 +125,7 @@ CREATE TABLE IF NOT EXISTS attendance (
         FOREIGN KEY (name) REFERENCES employees (name)
     );
     ''')
+
     print("Absences table - check")
 
     cursor.execute('''
@@ -128,10 +135,11 @@ CREATE TABLE IF NOT EXISTS attendance (
 
     cursor.execute('''
                    CREATE TABLE IF NOT EXISTS worktime_start (id INTEGER PRIMARY KEY AUTOINCREMENT, start_time TIMESTAMP)''')
-    print ("Worktime start table - check")
+    print("Worktime start table - check")
 
     conn.commit()
     conn.close()
+
 
 
 # Initialize Flask app
@@ -284,6 +292,8 @@ def log_attendance(name, action):
 
         print(f"Date: {today_str}, Time: {now_str}")
 
+        late_penalty = 0  # Initialize late penalty
+
         if action == 'entry':
             cursor.execute('SELECT start_time FROM worktime_start ORDER BY id DESC LIMIT 1')
             start_time_record = cursor.fetchone()
@@ -300,27 +310,27 @@ def log_attendance(name, action):
                 # Check if the entry time is later than the start time
                 if entry_time > start_time:
                     print("LATE ENTRANCE")
+                    late_penalty = 10  # Apply late entrance penalty
 
             cursor.execute('SELECT * FROM attendance WHERE name = ? AND date = ?', (name, today_str))
             entry = cursor.fetchone()
             print(f"Existing entry: {entry}")
 
             if entry is None:
-                # Retry mechanism for database lock issue
                 retries = 3
                 while retries > 0:
                     try:
-                        cursor.execute('INSERT INTO attendance (name, entry_time, date) VALUES (?, ?, ?)', 
-                                       (name, now_str, today_str))
+                        cursor.execute('INSERT INTO attendance (name, entry_time, date, late_entrance_penalty) VALUES (?, ?, ?, ?)', 
+                                       (name, now_str, today_str, late_penalty))
                         conn.commit()
-                        print(f"Logged entry for {name} at {now_str}")
+                        print(f"Logged entry for {name} at {now_str} with late penalty {late_penalty}")
                         send_notification(f"Entry Logged", f"{name} entered at {now_str}")
                         speak_message(f"Attendance for {name} successfully logged at {now_str} on {today_str}")
                         break
                     except sqlite3.OperationalError as e:
                         if "locked" in str(e):
                             print("Database is locked, retrying...")
-                            time.sleep(1)  # Wait for 1 second before retrying
+                            time.sleep(1)
                             retries -= 1
                         else:
                             raise e
@@ -329,7 +339,6 @@ def log_attendance(name, action):
             else:
                 print(f"Entry for {name} already exists for today.")
         
-        # Handling exit case
         elif action == 'exit':
             cursor.execute('SELECT * FROM attendance WHERE name = ? AND date = ?', (name, today_str))
             entry = cursor.fetchone()
@@ -360,6 +369,7 @@ def log_attendance(name, action):
             cursor.close()
         if conn:
             conn.close()
+
 
 
 
@@ -451,9 +461,9 @@ def payment_report():
     today = datetime.now().date()
     first_day_of_month = today.replace(day=1)
 
-    # Calculate total hours worked and overtime
+    # Calculate total hours worked, overtime, and late penalties
     cursor.execute('''
-    SELECT e.name, e.hourly_rate, SUM(a.work_hours), SUM(a.overtime_hours)
+    SELECT e.name, e.hourly_rate, SUM(a.work_hours), SUM(a.overtime_hours), SUM(a.late_entrance_penalty)
     FROM employees e
     LEFT JOIN attendance a ON e.name = a.name
     WHERE a.date BETWEEN ? AND ?
@@ -481,6 +491,7 @@ def payment_report():
         "hourly_rate": record[1],
         "total_hours": 0,
         "overtime_hours": 0,
+        "late_entrance_penalty": 0,
         "sick_days": record[2],
         "vacation_days": record[3],
         "total_payment": 0
@@ -491,6 +502,7 @@ def payment_report():
         hourly_rate = work_record[1]
         total_hours = work_record[2] if work_record[2] else 0
         overtime_hours = work_record[3] if work_record[3] else 0
+        late_entrance_penalty = work_record[4] if work_record[4] else 0
 
         if name not in employee_data:
             employee_data[name] = {
@@ -498,6 +510,7 @@ def payment_report():
                 "hourly_rate": hourly_rate,
                 "total_hours": total_hours,
                 "overtime_hours": overtime_hours,
+                "late_entrance_penalty": late_entrance_penalty,
                 "sick_days": 0,
                 "vacation_days": 0,
                 "total_payment": 0
@@ -505,6 +518,7 @@ def payment_report():
         else:
             employee_data[name]["total_hours"] = total_hours
             employee_data[name]["overtime_hours"] = overtime_hours
+            employee_data[name]["late_entrance_penalty"] = late_entrance_penalty
 
     payments = []
     for data in employee_data.values():
@@ -514,6 +528,7 @@ def payment_report():
         overtime_hours = data["overtime_hours"]
         sick_days = data["sick_days"]
         vacation_days = data["vacation_days"]
+        late_penalty = data["late_entrance_penalty"]
         
         # Payment for work hours (excluding overtime)
         work_payment = hourly_rate * total_hours
@@ -527,14 +542,18 @@ def payment_report():
         # Payment for sick days (70% of 8-hour workday)
         sick_payment = 0.7 * 8 * hourly_rate * sick_days
 
+        # Subtract late penalties
+        penalty_deduction = late_penalty
+
         # Calculate the total payment
-        total_payment = work_payment + overtime_payment + vacation_payment + sick_payment
+        total_payment = work_payment + overtime_payment + vacation_payment + sick_payment - penalty_deduction
         data["total_payment"] = total_payment
 
         payments.append(data)
     
     conn.close()
     return render_template('payment_report.html', payments=payments, today=today)
+
 
 
 

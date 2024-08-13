@@ -3,4 +3,4 @@ opencv-python
 numpy
 pillow
 sqlalchemy
-sqlite
+sqlite3

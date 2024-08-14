@@ -842,6 +842,41 @@ def chat():
     return render_template('chat.html', chat_history=chat_history)
 
 
+import requests
+
+
+def get_weather_forecast(api_key, location="your_city"):
+    url = f"http://api.weatherapi.com/v1/forecast.json?key={api_key}&q={location}&days=1"
+    response = requests.get(url)
+    data = response.json()
+    return data["forecast"]["forecastday"][0]["day"]["condition"]["text"]
+
+def predict_absence_due_to_weather(weather_condition):
+    bad_weather_keywords = ["rain", "storm", "snow", "fog", "hurricane"]
+    for keyword in bad_weather_keywords:
+        if keyword in weather_condition.lower():
+            return True
+    return False
+
+@app.route('/predict_absence', methods=['GET'])
+def predict_absence():
+    api_key = "fe2e5f9339b2434db60124446241408"
+    location = "London"
+    weather_condition = get_weather_forecast(api_key, location)
+    
+    if predict_absence_due_to_weather(weather_condition):
+        message = "Bad weather predicted, late entries due to traffic problems are possible."
+    else:
+        message = "No significant weather issues expected."
+    
+    # Return both the weather condition and the prediction message
+    return jsonify({
+        "weather_condition": weather_condition,
+        "message": message
+    })
+
+
+
 if __name__ == '__main__':
     create_tables()  # Initialize the database tables
     app.run(debug=True)

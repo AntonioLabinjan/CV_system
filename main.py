@@ -376,7 +376,16 @@ def log_attendance(name, action):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    api_key = "fe2e5f9339b2434db60124446241408"
+    location = "London" # Ili nešto drugo
+    weather_condition = get_weather_forecast(api_key, location)
+    
+    if predict_absence_due_to_weather(weather_condition):
+        message = "Bad weather predicted, late entries due to traffic problems are possible."
+    else:
+        message = "No significant weather issues expected. Employees should come on time"
+    
+    return render_template('index.html', weather_condition=weather_condition, message=message)
 
 @app.route('/video')
 def video():

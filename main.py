@@ -291,6 +291,47 @@ def is_within_workplace(location):
     return (abs(location[0] - WORKPLACE_COORDINATES[0]) <= LOCATION_TOLERANCE and
             abs(location[1] - WORKPLACE_COORDINATES[1]) <= LOCATION_TOLERANCE)
 
+import sendgrid
+from sendgrid.helpers.mail import Mail, Email, To, Content
+
+# SendGrid API key
+SENDGRID_API_KEY = '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'
+
+def send_email(name, action, date, time, late_flag):
+    try:
+        # Prepare email content
+        subject = f"Attendance {action.capitalize()} Logged for {name}"
+        content = f"""
+        <h2>Attendance Log Notification</h2>
+        <p><strong>Employee:</strong> {name}</p>
+        <p><strong>Action:</strong> {action.capitalize()}</p>
+        <p><strong>Date:</strong> {date}</p>
+        <p><strong>Time:</strong> {time}</p>
+        <p><strong>Late:</strong> {'Yes' if late_flag else 'No'}</p>
+        """
+
+        # Create SendGrid client
+        sg = sendgrid.SendGridAPIClient(api_key=SENDGRID_API_KEY)
+
+        # Create the email message
+        from_email = Email("attendance.logged@gmail.com")  # Replace with your sender email
+        to_email = To("alabinjan6@gmail.com")  # Replace with the recipient email
+        email_content = Content("text/html", content)
+        mail = Mail(from_email, to_email, subject, email_content)
+
+        # Send the email
+        response = sg.send(mail)
+
+        # Check response status
+        if response.status_code in [200, 202]:
+            print("Email notification sent successfully.")
+        else:
+            print(f"Failed to send email. Status Code: {response.status_code}, Response: {response.body}")
+
+    except Exception as e:
+        print(f"Failed to send email notification: {e}")
+
+
 def log_attendance(name, action):
     print(f"Attempting to log {action} for {name}")
 
@@ -318,6 +359,7 @@ def log_attendance(name, action):
             return
 
         late_penalty = 0  # Initialize late penalty
+        late_flag = False  # Late flag for email notification
 
         if action == 'entry':
             cursor.execute('SELECT start_time FROM worktime_start ORDER BY id DESC LIMIT 1')
@@ -336,6 +378,7 @@ def log_attendance(name, action):
                 if entry_time > start_time:
                     print("LATE ENTRANCE")
                     late_penalty = 10  # Apply late entrance penalty
+                    late_flag = True
 
             cursor.execute('SELECT * FROM attendance WHERE name = ? AND date = ?', (name, today_str))
             entry = cursor.fetchone()
@@ -351,6 +394,9 @@ def log_attendance(name, action):
                         print(f"Logged entry for {name} at {now_str} with late penalty {late_penalty}")
                         send_notification(f"Entry Logged", f"{name} entered at {now_str}")
                         speak_message(f"Attendance for {name} successfully logged at {now_str} on {today_str}")
+                        
+                        # Send email notification
+                        send_email(name, action, today_str, now_str, late_flag)
                         break
                     except sqlite3.OperationalError as e:
                         if "locked" in str(e):
@@ -383,6 +429,9 @@ def log_attendance(name, action):
                 print(f"Logged exit for {name} at {now_str}, work hours: {total_work_hours:.2f}, overtime: {overtime_hours:.2f}")
                 send_notification(f"Exit Logged", f"{name} exited at {now_str}")
                 speak_message(f"Attendance for {name} successfully logged at {now_str} on {today_str}")
+                
+                # Send email notification
+                send_email(name, action, today_str, now_str, late_flag)
             else:
                 print(f"No entry found for {name} to log exit.")
 

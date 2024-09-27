@@ -1,5 +1,8 @@
-Dodat live feed koji prepoznaje zaposlenike i/ili unauthorized osobe  Svaki prepoznati zaposlenik će poli sebe dobit basic info
-Dodat geolokaciju
+Dodat live feed koji prepoznaje zaposlenike i/ili unauthorized osobe
+
+Svaki prepoznati zaposlenik će poli sebe dobit basic info
+
+Dodat geolokaciju koja osigurava da su ljudi stvarno na zadanoj lokaciji
 
 
 

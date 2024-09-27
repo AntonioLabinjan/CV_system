@@ -4,6 +4,7 @@ Svaki prepoznati zaposlenik će poli sebe dobit basic info
 
 Dodat geolokaciju koja osigurava da su ljudi stvarno na zadanoj lokaciji
 
+Dodat email api
 
 
 ### CV_system

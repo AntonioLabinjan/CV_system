@@ -1,6 +1,6 @@
 Dodat live feed koji prepoznaje zaposlenike i/ili unauthorized osobe
 
-Alert za unauthorized osobe
+Alert za unauthorized osobe i za mjere zaštite (npr, za pasat kroz neka vrata moramo imat šljem, oćale i zaštitne postole)
 
 Svaki prepoznati zaposlenik će poli sebe dobit basic info
 

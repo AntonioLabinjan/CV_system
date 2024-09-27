@@ -12,6 +12,7 @@ Dodat bolju navigaciju (dropdown)
 
 pregled profila za svakega zaposlenika 
 
+
 ### CV_system
 ### Dokumentacija + smartlock (forši)
 

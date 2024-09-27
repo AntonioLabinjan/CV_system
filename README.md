@@ -4,7 +4,7 @@ Alert za unauthorized osobe i za mjere zaštite (npr, za pasat kroz neka vrata m
 
 Svaki prepoznati zaposlenik će poli sebe dobit basic info
 
-Dodat email api
+##### Dodat email api (DONE)
 
 Dodat deepface koji prati emocije zaposlenika, pa vidi dali dolaze/odlaze sretni/žalosni ili kakovi već i onda to analizirat
 

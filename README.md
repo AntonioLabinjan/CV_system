@@ -10,6 +10,7 @@ Dodat deepface koji prati emocije zaposlenika, pa vidi dali dolaze/odlaze sretni
 
 Dodat bolju navigaciju (dropdown)
 
+pregled profila za svakega zaposlenika 
 
 ### CV_system
 ### Dokumentacija + smartlock (forši)

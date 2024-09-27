@@ -1,3 +1,7 @@
+Dodat live feed koji prepoznaje zaposlenike i/ili unauthorized osobe  Svaki prepoznati zaposlenik će poli sebe dobit basic info
+
+
+
 ### CV_system
 ### Dokumentacija + smartlock (forši)
 

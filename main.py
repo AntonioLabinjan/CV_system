@@ -271,6 +271,26 @@ import time
 from datetime import datetime
 
 
+import sqlite3
+import time
+from datetime import datetime
+import requests  # For geolocation API calls
+
+# Define your workplace coordinates (latitude, longitude)
+WORKPLACE_COORDINATES = (45.74507, 16.00126)  # Replace with actual coordinates
+LOCATION_TOLERANCE = 0.01  # Adjust based on acceptable distance from workplace
+
+def get_current_location():
+    # Example using a geolocation API (like IP-based)
+    response = requests.get("https://api.ipgeolocation.io/ipgeo?apiKey=e91eb3107296443291715c5b3e2e69e8")
+    data = response.json()
+    return (float(data['latitude']), float(data['longitude']))
+
+def is_within_workplace(location):
+    # Calculate if within tolerance
+    return (abs(location[0] - WORKPLACE_COORDINATES[0]) <= LOCATION_TOLERANCE and
+            abs(location[1] - WORKPLACE_COORDINATES[1]) <= LOCATION_TOLERANCE)
+
 def log_attendance(name, action):
     print(f"Attempting to log {action} for {name}")
 
@@ -288,6 +308,14 @@ def log_attendance(name, action):
         now_str = now.strftime('%Y-%m-%d %H:%M:%S')
 
         print(f"Date: {today_str}, Time: {now_str}")
+
+        # Get current location
+        current_location = get_current_location()
+        print(f"Current location: {current_location}")
+
+        if not is_within_workplace(current_location):
+            print("Error: Employee is not within the allowed workplace area.")
+            return
 
         late_penalty = 0  # Initialize late penalty
 

@@ -6,6 +6,8 @@ Dodat geolokaciju koja osigurava da su ljudi stvarno na zadanoj lokaciji
 
 Dodat email api
 
+Dodat deepface koji prati emocije zaposlenika, pa vidi dali dolaze/odlaze sretni/žalosni ili kakovi već
+
 
 ### CV_system
 ### Dokumentacija + smartlock (forši)

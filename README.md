@@ -1,16 +1,7 @@
-Dodat live feed koji prepoznaje zaposlenike i/ili unauthorized osobe
 
-Alert za unauthorized osobe i za mjere zaštite (npr, za pasat kroz neka vrata moramo imat šljem, oćale i zaštitne postole)
-
-Svaki prepoznati zaposlenik će poli sebe dobit basic info
-
-##### Dodat email api (DONE)
-
-Dodat deepface koji prati emocije zaposlenika, pa vidi dali dolaze/odlaze sretni/žalosni ili kakovi već i onda to analizirat
 
 Dodat bolju navigaciju (dropdown)
 
-pregled profila za svakega zaposlenika 
 
 
 ### CV_system

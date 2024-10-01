@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mental Health Report</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>Mental Health Report</h1>
+    
+    {% for date, records in report.items() %}
+        <h2>{{ date }}</h2>
+        <ul>
+            {% for record in records %}
+                <li>{{ record }}</li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+
+    <h2>Emotion Distribution</h2>
+    <div id="pie-chart">
+        {{ pie_chart | safe }}
+    </div>
+
+    <h2>Emotions Over Time</h2>
+    <div id="bar-chart">
+        {{ bar_chart | safe }}
+    </div>
+</body>
+</html>

@@ -92,6 +92,7 @@ def create_tables():
         overtime_hours REAL DEFAULT 0.0,
         date DATE,
         late_entrance_penalty INTEGER DEFAULT 0,
+        emotion TEXT, 
         FOREIGN KEY (name) REFERENCES employees (name)
     );
     ''')
@@ -182,7 +183,18 @@ def check_starttime():
 
 # Function to recognize face in the frame
 def recognize_face(frame):
+    # Convert frame (OpenCV format) to RGB
     image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    
+    # DeepFace analysis for emotion detection (use the image array, not a file path)
+    try:
+        analysis = DeepFace.analyze(image_rgb, actions=['emotion'], enforce_detection=False)
+        dominant_emotion = analysis[0]['dominant_emotion']  # Use the first result from the analysis
+    except Exception as e:
+        print(f"Emotion detection failed: {e}")
+        dominant_emotion = "unknown"
+    
+    # Process face recognition (keep this part unchanged)
     inputs = processor(images=image_rgb, return_tensors="pt")
     with torch.no_grad():
         outputs = model.get_image_features(**inputs)
@@ -195,8 +207,9 @@ def recognize_face(frame):
     if min_distance < 0.6:  # Threshold for recognizing a face
         index = np.argmin(distances)
         name = known_face_names[index]
-        return name
-    return None
+        return name, dominant_emotion  # Return both the recognized name and the detected emotion
+    return None, dominant_emotion
+
 
 
 # Route to stream video
@@ -220,10 +233,10 @@ def generate_frames():
 
         # Convert the frame to RGB (OpenCV uses BGR)
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
+        
         # Convert to grayscale for face detection
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
+
         # Load a pre-trained face detector from OpenCV
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         
@@ -234,22 +247,22 @@ def generate_frames():
             # Extract the face region
             face_region = frame[y:y+h, x:x+w]
             
-            # Recognize the face
-            name = recognize_face(face_region)
+            # Recognize the face and detect emotion
+            name, emotion = recognize_face(face_region)
             
             # Draw the bounding box
             color = (0, 255, 0) if name else (0, 0, 255)  # Green for known, red for unknown
-            label = name if name else "unknown"
+            label = f"{name} ({emotion})" if name else f"unknown ({emotion})"
             cv2.rectangle(frame, (x, y), (x+w, y+h), color, 2)
             cv2.putText(frame, label, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
 
-            # Log attendance if recognized and button clicked
+            # Log attendance and emotion if recognized and button clicked
             if name and button_clicked:
                 if button_clicked == 'entry' and name not in logged_names:
                     logged_names.add(name)
-                    log_attendance(name, 'entry')
+                    log_attendance(name, 'entry', emotion)  # Pass emotion to log
                 elif button_clicked == 'exit' and name in logged_names:
-                    log_attendance(name, 'exit')
+                    log_attendance(name, 'exit', emotion)
                     logged_names.remove(name)
 
                 button_clicked = None  # Reset button click state
@@ -264,6 +277,7 @@ def generate_frames():
         frame = buffer.tobytes()
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
 
 # Function to log attendance
 import sqlite3
@@ -295,7 +309,7 @@ import sendgrid
 from sendgrid.helpers.mail import Mail, Email, To, Content
 
 # SendGrid API key
-SENDGRID_API_KEY = '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'
+SENDGRID_API_KEY = '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'
 
 def send_email(name, action, date, time, late_flag):
     try:
@@ -332,7 +346,9 @@ def send_email(name, action, date, time, late_flag):
         print(f"Failed to send email notification: {e}")
 
 
-def log_attendance(name, action):
+from deepface import DeepFace
+
+def log_attendance(name, action, dominant_emotion):
     print(f"Attempting to log {action} for {name}")
 
     conn = None
@@ -357,6 +373,8 @@ def log_attendance(name, action):
         if not is_within_workplace(current_location):
             print("Error: Employee is not within the allowed workplace area.")
             return
+
+        
 
         late_penalty = 0  # Initialize late penalty
         late_flag = False  # Late flag for email notification
@@ -388,10 +406,11 @@ def log_attendance(name, action):
                 retries = 3
                 while retries > 0:
                     try:
-                        cursor.execute('INSERT INTO attendance (name, entry_time, date, late_entrance_penalty) VALUES (?, ?, ?, ?)', 
-                                       (name, now_str, today_str, late_penalty))
+                        # Insert the entry log along with the detected emotion
+                        cursor.execute('INSERT INTO attendance (name, entry_time, date, late_entrance_penalty, emotion) VALUES (?, ?, ?, ?, ?)', 
+                                       (name, now_str, today_str, late_penalty, dominant_emotion))
                         conn.commit()
-                        print(f"Logged entry for {name} at {now_str} with late penalty {late_penalty}")
+                        print(f"Logged entry for {name} at {now_str} with late penalty {late_penalty} and emotion {dominant_emotion}")
                         send_notification(f"Entry Logged", f"{name} entered at {now_str}")
                         speak_message(f"Attendance for {name} successfully logged at {now_str} on {today_str}")
                         
@@ -423,10 +442,11 @@ def log_attendance(name, action):
                 regular_hours = min(total_work_hours, 8)
                 overtime_hours = max(total_work_hours - 8, 0)
 
-                cursor.execute('UPDATE attendance SET exit_time = ?, work_hours = ?, overtime_hours = ? WHERE record_id = ?', 
-                               (now_str, regular_hours, overtime_hours, entry[0]))
+                # Update the attendance with exit time and work hours
+                cursor.execute('UPDATE attendance SET exit_time = ?, work_hours = ?, overtime_hours = ?, emotion = ? WHERE record_id = ?', 
+                               (now_str, regular_hours, overtime_hours, dominant_emotion, entry[0]))
                 conn.commit()
-                print(f"Logged exit for {name} at {now_str}, work hours: {total_work_hours:.2f}, overtime: {overtime_hours:.2f}")
+                print(f"Logged exit for {name} at {now_str}, work hours: {total_work_hours:.2f}, overtime: {overtime_hours:.2f}, emotion: {dominant_emotion}")
                 send_notification(f"Exit Logged", f"{name} exited at {now_str}")
                 speak_message(f"Attendance for {name} successfully logged at {now_str} on {today_str}")
                 
@@ -960,6 +980,69 @@ def predict_absence():
         "weather_condition": weather_condition,
         "message": message
     })
+
+import plotly.express as px
+import pandas as pd
+
+@app.route('/mental_health_report')
+def mental_health_report():
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+
+        # Query to get all attendance records
+        cursor.execute('''
+            SELECT date, name, entry_time, exit_time, 
+                   (SELECT emotion FROM attendance WHERE record_id = a.record_id) AS entry_emotion, 
+                   (SELECT emotion FROM attendance WHERE record_id = a.record_id AND exit_time IS NOT NULL) AS exit_emotion
+            FROM attendance a
+            ORDER BY date, name
+        ''')
+        
+        mental_health_data = cursor.fetchall()
+        report = {}
+        
+        # Prepare the data for visualization
+        emotions_data = []
+        
+        # Group by date and format the data
+        for row in mental_health_data:
+            date = row[0]
+            name = row[1]
+            entry_emotion = row[4] if row[4] else 'N/A'
+            exit_emotion = row[5] if row[5] else 'N/A'
+            
+            if date not in report:
+                report[date] = []
+            report[date].append(f"{name}, Entry: {entry_emotion}, Exit: {exit_emotion}")
+            
+            # Collect emotions data for visualization
+            emotions_data.append({'date': date, 'name': name, 'type': 'entry', 'emotion': entry_emotion})
+            if exit_emotion != 'N/A':
+                emotions_data.append({'date': date, 'name': name, 'type': 'exit', 'emotion': exit_emotion})
+
+        # Convert data to pandas DataFrame for visualization
+        df = pd.DataFrame(emotions_data)
+
+        # Create a pie chart for entry and exit emotion distribution
+        pie_chart = px.pie(df, names='emotion', title='Overall Emotion Distribution', hole=0.3)
+        pie_chart_html = pie_chart.to_html(full_html=False)
+
+        # Create a bar chart to compare entry and exit emotions
+        bar_chart = px.histogram(df, x='date', color='emotion', barmode='group', title="Emotions Over Time")
+        bar_chart_html = bar_chart.to_html(full_html=False)
+
+        # Render the data in a template
+        return render_template('health_report.html', report=report, pie_chart=pie_chart_html, bar_chart=bar_chart_html)
+
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 
 

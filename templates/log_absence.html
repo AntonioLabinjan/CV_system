@@ -1,0 +1,120 @@
+<!-- log_absence.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Absence</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 40px;
+        }
+
+        .form-container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: auto;
+        }
+
+        .form-group label {
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            border-color: #3498db;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+
+        .form-container input, .form-container select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Smart Attendance System</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Menu
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                        <a class="dropdown-item" href="{{ url_for('set_starttime') }}">Set Work Start Time</a>
+                        <a class="dropdown-item" href="{{ url_for('add_employee') }}">Add New Employee</a>
+                        <a class="dropdown-item" href="{{ url_for('list_employees') }}">Employee List</a>
+                        <a class="dropdown-item" href="{{ url_for('attendance_report') }}">Attendance Report</a>
+                        <a class="dropdown-item" href="{{ url_for('payment_report') }}">Payment Report</a>
+                        <a class="dropdown-item" href="{{ url_for('log_absence') }}">Log Absence</a>
+                        <a class="dropdown-item" href="{{ url_for('attendance_overview') }}">Attendance Overview</a>
+                        <a class="dropdown-item" href="{{ url_for('work_hours_distribution') }}">Work Hours Distribution</a>
+                        <a class="dropdown-item" href="{{ url_for('payment_breakdown') }}">Payment Breakdown</a>
+                        <a class="dropdown-item" href="{{ url_for('chat') }}">Employee Chat</a>
+                        <a class="dropdown-item" href="{{ url_for('mental_health_report') }}">Mental Health Report</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="form-container">
+        <h1>Log Sick Day or Vacation Day</h1>
+        <form action="{{ url_for('log_absence') }}" method="POST">
+            <div class="form-group">
+                <label for="name">Employee Name:</label>
+                <input type="text" id="name" name="name" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="date">Date:</label>
+                <input type="date" id="date" name="date" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="absence_type">Type of Absence:</label>
+                <select id="absence_type" name="absence_type" class="form-control" required>
+                    <option value="sick">Sick Day</option>
+                    <option value="vacation">Vacation Day</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Log Absence</button>
+        </form>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>

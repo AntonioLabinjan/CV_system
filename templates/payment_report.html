@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Report</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        h1 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: #2c3e50;
+        }
+        .export-btn {
+            margin-bottom: 20px;
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .export-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Smart Attendance System</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Menu
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                        <a class="dropdown-item" href="{{ url_for('set_starttime') }}">Set Work Start Time</a>
+                        <a class="dropdown-item" href="{{ url_for('add_employee') }}">Add New Employee</a>
+                        <a class="dropdown-item" href="{{ url_for('list_employees') }}">Employee List</a>
+                        <a class="dropdown-item" href="{{ url_for('attendance_report') }}">Attendance Report</a>
+                        <a class="dropdown-item" href="{{ url_for('payment_report') }}">Payment Report</a>
+                        <a class="dropdown-item" href="{{ url_for('log_absence') }}">Log Absence</a>
+                        <a class="dropdown-item" href="{{ url_for('attendance_overview') }}">Attendance Overview</a>
+                        <a class="dropdown-item" href="{{ url_for('work_hours_distribution') }}">Work Hours Distribution</a>
+                        <a class="dropdown-item" href="{{ url_for('payment_breakdown') }}">Payment Breakdown</a>
+                        <a class="dropdown-item" href="{{ url_for('chat') }}">Employee Chat</a>
+                        <a class="dropdown-item" href="{{ url_for('mental_health_report') }}">Mental Health Report</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <h1>Payment Report as of {{ today }}</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Employee Name</th>
+                <th>Hourly Rate</th>
+                <th>Total Hours Worked</th>
+                <th>Overtime Hours</th>
+                <th>Sick Days</th>
+                <th>Vacation Days</th>
+                <th>Total Payment</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for payment in payments %}
+            <tr>
+                <td>{{ payment.name }}</td>
+                <td>{{ payment.hourly_rate }}</td>
+                <td>{{ payment.total_hours }}</td>
+                <td>{{ payment.overtime_hours }}</td>
+                <td>{{ payment.sick_days }}</td>
+                <td>{{ payment.vacation_days }}</td>
+                <td>{{ payment.total_payment }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <br>
+    <a href="{{ url_for('export_payment_report') }}" class="export-btn">Export Report as CSV</a><br>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Return to Home</a>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>

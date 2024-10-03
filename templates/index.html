@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Attendance System</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+        .navbar {
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #343a40;
+        }
+        .lead {
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+        .weather-section {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+        }
+        .weather-section h3 {
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Smart Attendance System</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Menu
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                        <a class="dropdown-item" href="{{ url_for('set_starttime') }}">Set Work Start Time</a>
+                        <a class="dropdown-item" href="{{ url_for('add_employee') }}">Add New Employee</a>
+                        <a class="dropdown-item" href="{{ url_for('list_employees') }}">Employee List</a>
+                        <a class="dropdown-item" href="{{ url_for('attendance_report') }}">Attendance Report</a>
+                        <a class="dropdown-item" href="{{ url_for('payment_report') }}">Payment Report</a>
+                        <a class="dropdown-item" href="{{ url_for('log_absence') }}">Log Absence</a>
+                        <a class="dropdown-item" href="{{ url_for('attendance_overview') }}">Attendance Overview</a>
+                        <a class="dropdown-item" href="{{ url_for('work_hours_distribution') }}">Work Hours Distribution</a>
+                        <a class="dropdown-item" href="{{ url_for('payment_breakdown') }}">Payment Breakdown</a>
+                        <a class="dropdown-item" href="{{ url_for('chat') }}">Employee Chat</a>
+                        <a class="dropdown-item" href="{{ url_for('mental_health_report') }}">Mental Health Report</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 class="mt-5">Smart Employee Attendance and Payment System</h1>
+        <p class="lead">Welcome to the Smart Employee Attendance and Payment System.</p>
+        <a href="{{ url_for('video') }}" class="btn btn-primary btn-lg">Start Attendance</a>
+
+        <!-- Display Weather Information -->
+        <div class="weather-section">
+            <h3>Weather Forecast</h3>
+            <p>Current weather: <strong>{{ weather_condition }}</strong></p>
+            <p>Message: <strong>{{ message }}</strong></p>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

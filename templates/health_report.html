@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mental Health Report</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+
+        .report ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .report li {
+            background-color: #ecf0f1;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 5px solid #3498db;
+        }
+
+        #pie-chart, #bar-chart {
+            margin-top: 40px;
+        }
+
+        .chart-container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 40px;
+        }
+
+        /* Styles for navigation bar */
+        .navbar-nav .nav-item {
+            margin-right: 20px;
+        }
+
+        .navbar-nav .nav-link {
+            color: #333;
+            font-weight: bold;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Smart Attendance System</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Menu
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                        <a class="dropdown-item" href="{{ url_for('set_starttime') }}">Set Work Start Time</a>
+                        <a class="dropdown-item" href="{{ url_for('add_employee') }}">Add New Employee</a>
+                        <a class="dropdown-item" href="{{ url_for('list_employees') }}">Employee List</a>
+                        <a class="dropdown-item" href="{{ url_for('attendance_report') }}">Attendance Report</a>
+                        <a class="dropdown-item" href="{{ url_for('payment_report') }}">Payment Report</a>
+                        <a class="dropdown-item" href="{{ url_for('log_absence') }}">Log Absence</a>
+                        <a class="dropdown-item" href="{{ url_for('attendance_overview') }}">Attendance Overview</a>
+                        <a class="dropdown-item" href="{{ url_for('work_hours_distribution') }}">Work Hours Distribution</a>
+                        <a class="dropdown-item" href="{{ url_for('payment_breakdown') }}">Payment Breakdown</a>
+                        <a class="dropdown-item" href="{{ url_for('chat') }}">Employee Chat</a>
+                        <a class="dropdown-item" href="{{ url_for('mental_health_report') }}">Mental Health Report</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <h1>Mental Health Report</h1>
+
+    <div class="report">
+        {% for date, records in report.items() %}
+            <h2>{{ date }}</h2>
+            <ul>
+                {% for record in records %}
+                    <li>{{ record }}</li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+    </div>
+
+    <div class="chart-container">
+        <h2>Emotion Distribution</h2>
+        <div id="pie-chart">
+            {{ pie_chart | safe }}
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <h2>Emotions Over Time</h2>
+        <div id="bar-chart">
+            {{ bar_chart | safe }}
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

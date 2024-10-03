@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video Feed</title>
+    <style>
+        .container {
+            text-align: center;
+        }
+        .video-frame {
+            display: block;
+            margin: 0 auto;
+        }
+        .buttons {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Video Feed</h1>
+        <img src="{{ url_for('video_feed') }}" class="video-frame" id="videoFeed">
+        <div class="buttons">
+            <button id="entryButton">Log Entry</button>
+            <button id="exitButton">Log Exit</button>
+            <a href="{{ url_for('attendance_report') }}" class="button">Go to Attendance Report</a>
+        </div>
+    </div>
+    <script>
+        document.getElementById('entryButton').addEventListener('click', function() {
+            fetch('{{ url_for("video_feed") }}?action=entry', { method: 'POST' });
+        });
+
+        document.getElementById('exitButton').addEventListener('click', function() {
+            fetch('{{ url_for("video_feed") }}?action=exit', { method: 'POST' });
+        });
+    </script>
+</body>
+</html>

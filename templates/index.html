@@ -3,95 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Attendance System</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <style>
-        body {
-            background-color: #f8f9fa;
-            font-family: Arial, sans-serif;
+        /* Style for the dropdown container */
+        .dropdown {
+            position: relative;
+            display: inline-block;
         }
-        .navbar {
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #343a40;
-        }
-        .lead {
-            font-size: 1.25rem;
-            margin-bottom: 20px;
-        }
-        .btn-primary {
-            background-color: #007bff;
-            border-color: #007bff;
-            transition: background-color 0.3s, transform 0.2s;
-        }
-        .btn-primary:hover {
-            background-color: #0056b3;
-            transform: scale(1.05);
-        }
-        .weather-section {
-            background-color: #ffffff;
-            padding: 20px;
+
+        /* Dropdown button styling */
+        .dropdown button {
+            background-color: #343a40;
+            color: white;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: none;
             border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-top: 30px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
         }
-        .weather-section h3 {
-            color: #007bff;
+
+        .dropdown button:hover {
+            background-color: #495057;
+        }
+
+        /* Dropdown menu */
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0; /* Align the dropdown menu to the right */
+            background-color: #343a40;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            z-index: 1;
+        }
+
+        /* Links inside the dropdown */
+        .dropdown-content a {
+            color: white;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s ease;
+        }
+
+        /* Hover effect on dropdown links */
+        .dropdown-content a:hover {
+            background-color: #495057;
+        }
+
+        /* Show the dropdown menu on hover */
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        /* Remove default list styling for navbar */
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+
+        /* Container for the weather section */
+        .mt-5 {
+            margin-top: 40px;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #222; /* Darker background */
+            color: #e0e0e0; /* Lighter text */
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        h2 {
+            color: #0056b3;
+        }
+
+        h3 {
+            margin-top: 40px;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">Smart Attendance System</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNavDropdown">
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('index') }}">Home</a>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Menu
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                        <a class="dropdown-item" href="{{ url_for('set_starttime') }}">Set Work Start Time</a>
-                        <a class="dropdown-item" href="{{ url_for('add_employee') }}">Add New Employee</a>
-                        <a class="dropdown-item" href="{{ url_for('list_employees') }}">Employee List</a>
-                        <a class="dropdown-item" href="{{ url_for('attendance_report') }}">Attendance Report</a>
-                        <a class="dropdown-item" href="{{ url_for('payment_report') }}">Payment Report</a>
-                        <a class="dropdown-item" href="{{ url_for('log_absence') }}">Log Absence</a>
-                        <a class="dropdown-item" href="{{ url_for('attendance_overview') }}">Attendance Overview</a>
-                        <a class="dropdown-item" href="{{ url_for('work_hours_distribution') }}">Work Hours Distribution</a>
-                        <a class="dropdown-item" href="{{ url_for('payment_breakdown') }}">Payment Breakdown</a>
-                        <a class="dropdown-item" href="{{ url_for('chat') }}">Employee Chat</a>
-                        <a class="dropdown-item" href="{{ url_for('mental_health_report') }}">Mental Health Report</a>
-                    </div>
-                </li>
-            </ul>
-        </div>
-    </nav>
+    <h2>Welcome {{ current_user.username }}!</h2>
 
-    <div class="container">
-        <h1 class="mt-5">Smart Employee Attendance and Payment System</h1>
-        <p class="lead">Welcome to the Smart Employee Attendance and Payment System.</p>
-        <a href="{{ url_for('video') }}" class="btn btn-primary btn-lg">Start Attendance</a>
-
-        <!-- Display Weather Information -->
-        <div class="weather-section">
-            <h3>Weather Forecast</h3>
-            <p>Current weather: <strong>{{ weather_condition }}</strong></p>
-            <p>Message: <strong>{{ message }}</strong></p>
+    <!-- Dropdown button and menu aligned to the right, with labels left-aligned -->
+    <div class="dropdown">
+        <button>Menu</button>
+        <div class="dropdown-content">
+            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('video_feed') }}">Start Attendance</a>
+            <a href="{{ url_for('attendance') }}">View Attendance</a>
+            <a href="{{ url_for('set_subject') }}">Set Subject</a>
+            <a href="{{ url_for('add_student') }}">Add Student</a>
+            <a href="{{ url_for('announcements') }}">View Announcements</a>
+            <a href="{{ url_for('download_attendance') }}">Download Attendance CSV</a>
+            <a href="{{ url_for('plots') }}">Visualization</a>
+            <a href="{{ url_for('report') }}">Report</a>
+            <a href="{{ url_for('late_entries') }}">Late Analysis</a>
+            <a href="{{ url_for('show_calendar') }}">Show Calendar</a>
+            <a href="{{ url_for('logout') }}">Log Out</a>
         </div>
     </div>
 
-    <!-- Bootstrap JS and dependencies -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Weather section -->
+    <div class="mt-5">
+        <h3>Weather Forecast</h3>
+        <p>Current weather: <strong>{{ weather_condition }}</strong></p>
+        <p>Message: <strong>{{ message }}</strong></p>
+    </div>
+
+    <form action="{{ url_for('github_profile') }}" method="get">
+        <button type="submit" style="
+            padding: 6px 12px;  /* Smaller padding */
+            font-size: 12px;  /* Smaller font size */
+            background-color: #000000;  /* Dark background */
+            color: white;  /* Light text */
+            border: none;
+            border-radius: 4px;  /* Rounded corners */
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        ">About Author</button>
+    </form>
+
 </body>
 </html>
